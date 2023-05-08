@@ -7,4 +7,5 @@
 ---
 
 ## 部署
-### TODO
+docker run -p 18080:8080 -p 15432:5432 -p 18880:80 --privileged=true --name <oa06> --hostname hostoa -itd <oa:0.6> /usr/sbin/init
+
