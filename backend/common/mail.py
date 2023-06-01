@@ -10,84 +10,63 @@ def _format_addr(s):
     name, addr = parseaddr(s)
     return formataddr((Header(name, 'utf-8').encode(), addr))
 
-def send_email(sender_email_address, sender_email_password, name, position, bank_number, base_pay, 
-        seniority_pay, title_pay, academic_pay, assessment_bonus, housing_supplement, total_pay, 
-        pension, medical_insurance, unemployment, accumulation_fund, income_tax, union_fee, 
-        total_deduction, paidin_amount, phone_number, receiver_email_address, month):
+
+'''
+is_success, result = mail.send_email(
+    sender_email_address, sender_email_password, 
+    salary_row.email_address, salary_row.month,
+    head_keys, salary_row_value,
+)
+'''
+def send_email(sender_email_address, sender_email_password, receiver_email_address, month, head_keys, salary_row_value):
     
-    content = set_content(name, position, bank_number, base_pay, seniority_pay, title_pay, academic_pay, 
-        assessment_bonus, housing_supplement, total_pay, pension, medical_insurance, unemployment,
-        accumulation_fund, income_tax, union_fee, total_deduction, paidin_amount)
+    content = set_content(head_keys, salary_row_value)
     
-    is_success, result = send(sender_email_address, sender_email_password, name, receiver_email_address, 
-        month, content)
+    is_success, result = send(sender_email_address, sender_email_password, '我', receiver_email_address, month, content)
 
     return is_success, result
 
 
 # 拼装内容格式
-def set_content(name, position, bank_number, base_pay, seniority_pay, title_pay, academic_pay, 
-        assessment_bonus, housing_supplement, total_pay, pension, medical_insurance, unemployment,
-        accumulation_fund, income_tax, union_fee, total_deduction, paidin_amount):
-    
+def set_content(head_keys, salary_row_value):
     content = '''
 <table border="1">
+    '''
+
+    num = len(head_keys)
+    
+    for i in range(num):
+      if (i+1) % 4 == 1:
+        content += '''
   <tr>
-    <td bgcolor="#f8f8f8" width=80px height=50px style="padding:0 5px;"><b>姓名</b></td>
+    <td bgcolor="#f8f8f8" width=80px height=50px style="padding:0 5px;"><b>%s</b></td>
     <td width=120px style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" width=80px style="padding:0 5px;"><b>岗位</b></td>
+        ''' % (head_keys[i], salary_row_value[i])
+      elif (i+1) % 4 == 0:
+        content += '''
+    <td bgcolor="#f8f8f8" width=80px style="padding:0 5px;"><b>%s</b></td>
     <td width=120px style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" width=80px style="padding:0 5px;"><b>银行卡号</b></td>
-    <td width=120px style="word-break:break-all;padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" width=80px style="padding:0 5px;"><b>基本工资</b></td>
+  </tr>
+        ''' % (head_keys[i], salary_row_value[i])
+      else:
+        content += '''
+    <td bgcolor="#f8f8f8" width=80px style="padding:0 5px;"><b>%s</b></td>
     <td width=120px style="padding:0 5px;">%s</td>
-  </tr>
-  <tr>
-    <td bgcolor="#f8f8f8" height=50px style="padding:0 5px;"><b>工龄工资</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>职称工资</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>学历工资</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>考核奖金</b></td>
-    <td style="padding:0 5px;">%s</td>
-  </tr>
-  <tr>
-    <td bgcolor="#f8f8f8" height=50px style="padding:0 5px;"><b>房补</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>应发合计</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>养老</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>医保</b></td>
-    <td style="padding:0 5px;">%s</td>
-  </tr>
-  <tr>
-    <td bgcolor="#f8f8f8" height=50px style="padding:0 5px;"><b>失业</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>公积金</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>个税</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>工会费</b></td>
-    <td style="padding:0 5px;">%s</td>
-  </tr>
-  <tr>
-    <td bgcolor="#f8f8f8" height=50px style="padding:0 5px;"><b>扣款合计</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>实发金额</b></td>
-    <td style="padding:0 5px;">%s</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>其他</b></td>
-    <td style="padding:0 5px;">-</td>
-    <td bgcolor="#f8f8f8" style="padding:0 5px;"><b>备注</b></td>
-    <td style="padding:0 5px;">-</td>
+        ''' % (head_keys[i], salary_row_value[i])
+    
+
+    if num % 4 == 0:
+      content += '''
+</table>
+      '''
+    else:
+      content += '''
   </tr>
 </table>
-    ''' % (name, position, bank_number, base_pay, seniority_pay, title_pay, academic_pay, 
-    assessment_bonus, housing_supplement, total_pay, pension, medical_insurance, unemployment, 
-    accumulation_fund, income_tax, union_fee, total_deduction, paidin_amount)
+      '''
 
     return content
+
 
 # 发送
 def send(sender_email_address, sender_email_password, name, receiver_email_address, month, content):

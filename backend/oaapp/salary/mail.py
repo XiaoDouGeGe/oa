@@ -27,28 +27,37 @@ def do_post(request, args, kwargs):
     
     # ids = request.POST['ids']  # 多个id之间以逗号分隔
     salary_rows = None
+    head_keys= []
 
     if ids == "all":
-        salary_rows = _db.Salary.objects.filter(row_status=True, month=month)
-    else:
+        salary_rows = _db.Salary.objects.filter(row_status=True, month=month).order_by('id')
+    else:  # 需要把表头的id也传过来
         id_list = ids.strip().split(",")
-        salary_rows = _db.Salary.objects.filter(row_status=True, month=month, id__in=id_list)
+        salary_rows = _db.Salary.objects.filter(row_status=True, month=month, id__in=id_list).order_by('id')
     
     for salary_row in salary_rows:
-
+        # 
+        if salary_row.is_head == True and salary_row.col_num > 0:
+            # 纯表头
+            for j in range(salary_row.col_num):
+                v_name = 'v' + str((j+1))  # j从0开始，v_name从v1开始
+                head_keys.append(getattr(salary_row, v_name, v_name))
+            continue
+        
+        # 真正的xinzi数据(排除掉表头)
         if not salary_row.email_address:
             continue
 
+        salary_row_value = []
+        for jj in range(salary_row.col_num):
+            v_name = 'v' + str((jj+1))  # j从0开始，v_name从v1开始
+            salary_row_value.append(getattr(salary_row, v_name, v_name))
+        
         # 发送邮件
         is_success, result = mail.send_email(
-            sender_email_address, sender_email_password,
-            salary_row.name, salary_row.position, salary_row.bank_number, salary_row.base_pay, 
-            salary_row.seniority_pay, salary_row.title_pay, salary_row.academic_pay, 
-            salary_row.assessment_bonus, salary_row.housing_supplement, salary_row.total_pay, 
-            salary_row.pension, salary_row.medical_insurance, salary_row.unemployment,
-            salary_row.accumulation_fund, salary_row.income_tax, salary_row.union_fee, 
-            salary_row.total_deduction, salary_row.paidin_amount, salary_row.phone_number, 
+            sender_email_address, sender_email_password, 
             salary_row.email_address, salary_row.month,
+            head_keys, salary_row_value,
         )
         
         # 保存结果

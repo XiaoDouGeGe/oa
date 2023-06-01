@@ -44,21 +44,29 @@ def do_post(request, args, kwargs):
     # 2.写入pg
     book = xlrd.open_workbook(file_path)
     sheet = book.sheet_by_index(0)  # 第1个sheet页
+    v_email = -1  # 邮箱是第x列，从0开始
     # nrows = sheet.nrows  # 行数
     # ncols = sheet.ncols  # 列数
     with transaction.atomic():
-        for i in range(2, sheet.nrows):  # 第1-2行为表头，不读
+        for i in range(sheet.nrows):
+            if i == 0:
+                salary_row = _db.Salary.objects.create(month=month, is_head=True, col_num=sheet.ncols)
+            else:
+                salary_row = _db.Salary.objects.create(month=month, is_head=False, col_num=sheet.ncols)
+            
             rows = str(sheet.row_values(i))  # 一行一行的读
             row = eval(rows)  # 此为某一行数据
-            # 插入数据，不需要row[0]
-            salary_row = _db.Salary.objects.create(
-                name=row[1], position=row[2], bank_number=row[3], base_pay=str(num.str2num(str(row[4]))), seniority_pay=str(num.str2num(str(row[5]))),
-                title_pay=str(num.str2num(str(row[6]))), academic_pay=str(num.str2num(str(row[7]))), assessment_bonus=str(num.str2num(str(row[8]))), 
-                housing_supplement=str(num.str2num(str(row[9]))), total_pay=str(num.str2num(str(row[10]))), pension=str(num.str2num(str(row[11]))), 
-                medical_insurance=str(num.str2num(str(row[12]))), unemployment=str(num.str2num(str(row[13]))), accumulation_fund=str(num.str2num(str(row[14]))), 
-                income_tax=str(num.str2num(str(row[15]))), union_fee=str(num.str2num(str(row[16]))), total_deduction=str(num.str2num(str(row[17]))), 
-                paidin_amount=str(num.str2num(str(row[18]))), phone_number=str(row[19]).split('.')[0], email_address=row[20], month=month,
-            )
+            
+            for j in range(len(row)):  # 遍历当前行的每个数据
+                if row[j] == u'邮箱':
+                    v_email = j   # 循环体内，该值不重置
+
+                v_name = 'v' + str((j+1))  # j从0开始，v_name从v1开始
+                setattr(salary_row, v_name, row[j])
+
+            salary_row.email_address = row[v_email] if v_email > -1
+            
+            salary_row.save()
 
     res = {'errorno': 0, 'data': {}}
     
