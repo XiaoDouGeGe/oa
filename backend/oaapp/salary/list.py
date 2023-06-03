@@ -14,17 +14,21 @@ def get_data(request, args, kwargs):
 
     month = request.GET.get('month', '')
     key = request.GET.get('key', '')
-    head_keys= []
+    head_keys= {}
     detail = []
     salary_rows = _db.Salary.objects.filter(row_status=True, month=month).order_by('id')
     for salary_row in salary_rows:
         if salary_row.is_head == True and salary_row.col_num > 0:
             # 表头，与前端约定：前6个不展示
-            head_keys = [salary_row.id, salary_row.month, salary_row.create_time, salary_row.is_head, salary_row.col_num, salary_row.email_address]
+            head_keys = {
+                'id': salary_row.id, 'month': salary_row.month, 'create_time': salary_row.create_time, 
+                'is_head': salary_row.is_head, 'col_num': salary_row.col_num, 'email_address': salary_row.email_address
+            }
             for j in range(salary_row.col_num):
                 v_name = 'v' + str((j+1))  # j从0开始，v_name从v1开始
-                head_keys.append(getattr(salary_row, v_name, v_name))
-            head_keys.append(u'最近发送')  
+                head_keys[v_name] = getattr(salary_row, v_name, v_name)
+            # head_keys.append(u'最近发送')  
+            head_keys['lastest_ok'] = u'最近发送'
             continue
 
         # 模糊查询
@@ -32,11 +36,16 @@ def get_data(request, args, kwargs):
         if not key:
             is_mohu = True
 
-        salary_row_value = [salary_row.id, salary_row.month, salary_row.create_time, salary_row.is_head, salary_row.col_num, salary_row.email_address]
-        
+        # salary_row_value = [salary_row.id, salary_row.month, salary_row.create_time, salary_row.is_head, salary_row.col_num, salary_row.email_address]
+        salary_row_value = {
+                'id': salary_row.id, 'month': salary_row.month, 'create_time': salary_row.create_time, 
+                'is_head': salary_row.is_head, 'col_num': salary_row.col_num, 'email_address': salary_row.email_address
+            }
+
         for jj in range(salary_row.col_num):
             v_name = 'v' + str((jj+1))  # j从0开始，v_name从v1开始
-            salary_row_value.append(getattr(salary_row, v_name, v_name))
+            # salary_row_value.append(getattr(salary_row, v_name, v_name))
+            salary_row_value[v_name] = getattr(salary_row, v_name, v_name)
 
             if not is_mohu and key in str(getattr(salary_row, v_name, v_name)):
                 is_mohu = True
@@ -50,7 +59,8 @@ def get_data(request, args, kwargs):
         if len(history_rows) > 0 and history_rows[0].status:
             lastest_ok = True
         
-        salary_row_value.append(lastest_ok)
+        # salary_row_value.append(lastest_ok)
+        salary_row_value['lastest_ok'] = lastest_ok
 
         detail.append(salary_row_value)
 
