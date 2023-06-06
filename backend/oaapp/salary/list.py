@@ -53,11 +53,13 @@ def get_data(request, args, kwargs):
         if not is_mohu:
             continue
 
-        # lastest_ok，最近一次发送成功，初始值是False。
-        lastest_ok = False
+        # lastest_ok，最近一次发送成功，0 空，1 成功， 2 失败
+        lastest_ok = 0
         history_rows = _db.MailHistory.objects.filter(row_status=True, salary_id=salary_row.id).order_by('-id')
         if len(history_rows) > 0 and history_rows[0].status:
-            lastest_ok = True
+            lastest_ok = 1
+        elif len(history_rows) > 0 and not history_rows[0].status:
+            lastest_ok = 2
         
         # salary_row_value.append(lastest_ok)
         salary_row_value['lastest_ok'] = lastest_ok
