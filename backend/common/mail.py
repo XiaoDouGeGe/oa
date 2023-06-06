@@ -74,6 +74,9 @@ def send(sender_email_address, sender_email_password, name, receiver_email_addre
     is_success, result = True, ''
 
     host = 'smtp.126.com'
+    if sender_email_address.endswith('163.com'):
+        host = 'smtp.163.com'
+
     subject = month + u' 工资，请查收！'
 
     msg = MIMEText(content, 'html', 'utf-8')
