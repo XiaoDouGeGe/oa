@@ -11,6 +11,7 @@ import sys
 import importlib
 importlib.reload(sys)
 # sys.setdefaultencoding('utf-8')
+import pandas as pd
 
 @error.error_decorator
 def do_post(request, args, kwargs):
@@ -32,9 +33,10 @@ def do_post(request, args, kwargs):
         res = {"errorno": "S9999", "error_msg_en": "Error", "error_msg_zh": "请选择要上传的文件"}
         return res
     
-    file_path = '/projects/oa/files/salary_excel/' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '_' + salary_excel.name
-    
-    file_path = file_path.encode('UTF-8')
+    # file_path = '/projects/oa/files/salary_excel/' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '_' + salary_excel.name
+    file_path = datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '_to_delete_' + '.' + salary_excel.name.split('.')[-1]
+
+    # file_path = file_path.encode('UTF-8')
 
     # 1.上传至指定目录，加以时间戳保存文件
     with open(file_path, 'wb') as f:
@@ -42,29 +44,31 @@ def do_post(request, args, kwargs):
             f.write(i)
     
     # 2.写入pg
-    book = xlrd.open_workbook(file_path)
-    sheet = book.sheet_by_index(0)  # 第1个sheet页
+    data_frame = pd.read_excel(file_path, sheet_name=0, header=None, dtype=str)
+    # data_frame.shape[1]  # 列数
+    # data_frame.shape[0]  # 行数
+
     v_email = -1  # 邮箱是第x列，从0开始
-    # nrows = sheet.nrows  # 行数
-    # ncols = sheet.ncols  # 列数
+
     with transaction.atomic():
-        for i in range(sheet.nrows):
+        for i, row in data_frame.iterrows():
             if i == 0:
-                salary_row = _db.Salary.objects.create(month=month, is_head=True, col_num=sheet.ncols)
+                salary_row = _db.Salary.objects.create(month=month, is_head=True, col_num=data_frame.shape[1])
             else:
-                salary_row = _db.Salary.objects.create(month=month, is_head=False, col_num=sheet.ncols)
-            
-            rows = str(sheet.row_values(i))  # 一行一行的读
-            row = eval(rows)  # 此为某一行数据
-            
-            for j in range(len(row)):  # 遍历当前行的每个数据
-                if row[j] == u'邮箱':
+                salary_row = _db.Salary.objects.create(month=month, is_head=False, col_num=data_frame.shape[1])
+
+            for j in data_frame.columns:
+                cell_data = row[j] if not pd.isnull(row[j]) else ''
+
+                if cell_data == u'邮箱':
                     v_email = j   # 循环体内，该值不重置
 
                 v_name = 'v' + str((j+1))  # j从0开始，v_name从v1开始
-                setattr(salary_row, v_name, row[j])
+                setattr(salary_row, v_name, cell_data)
 
-            salary_row.email_address = row[v_email] if v_email > -1
+            # salary_row.email_address = row[v_email] if v_email > -1
+            if v_email > -1:
+                salary_row.email_address = row[v_email] 
             
             salary_row.save()
 
